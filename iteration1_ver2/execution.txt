@@ -1,0 +1,2 @@
+g++ -o main main.cpp scheduler.cpp floor.cpp elevator.cpp -pthread
+./main
