@@ -33,4 +33,4 @@ This project simulates a elevator system where multiple elevators handle request
 - 'Floor Subsystem' : Reads input requests and sends them to the scheduler.
 - 'Scheduler Subsystem' : Manages incoming requests and assigns them to the elevator.
 - 'Elevator Subsystem' : Moves to requested floors, opens and closes doors, and updates system state.
--' Synchronization' : Ensures only one request is processed at a time.
+- 'Synchronization' : Ensures only one request is processed at a time.
