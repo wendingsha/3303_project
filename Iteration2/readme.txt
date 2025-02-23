@@ -24,3 +24,13 @@ This project simulates a elevator system where multiple elevators handle request
 
 ## Compilation & Execution
 - Refer to the `execution.txt` file.
+
+
+##Iteration 2 Updates
+- This iteration implements the Scheduler and Elevator Subsystems, ensuring proper communication between the Floor Subsystem (which generates elevator requests) and the Elevator Subsystem (which processes requests).
+
+###Features Implemented
+- 'Floor Subsystem' : Reads input requests and sends them to the scheduler.
+- 'Scheduler Subsystem' : Manages incoming requests and assigns them to the elevator.
+- 'Elevator Subsystem' : Moves to requested floors, opens and closes doors, and updates system state.
+-' Synchronization' : Ensures only one request is processed at a time.
