@@ -54,3 +54,15 @@ void elevatorFunction(int elevatorId) {
         state = ElevatorState::IDLE;
     }
 }
+
+int main(int argc, char* argv[]) {
+    if (argc != 2) {
+        std::cerr << "Usage: ./elevator <elevator_id>" << std::endl;
+        return 1;
+    }
+
+    int elevatorId = std::stoi(argv[1]);
+    elevatorFunction(elevatorId);
+    return 0;
+}
+
