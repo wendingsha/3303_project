@@ -1,0 +1,1 @@
+g++ main.cpp scheduler.cpp floor.cpp elevator.cpp time_manager.cpp -o elevator_system -pthread
