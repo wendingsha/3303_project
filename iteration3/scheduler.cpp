@@ -115,3 +115,10 @@ void schedulerFunction() {
         }
     }
 }
+
+
+int main() {
+    schedulerFunction();
+    return 0;
+}
+
