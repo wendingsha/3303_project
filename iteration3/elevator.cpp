@@ -35,18 +35,22 @@ void elevatorFunction(int elevatorId) {
 
         if (receivedElevatorId != elevatorId) continue;
 
-        std::cout << "Elevator " << elevatorId << " moving from " << pickupFloor << " to " << destinationFloor << std::endl;
+        // 如果电梯不处于空闲状态，则拒绝新请求
+        if (state != ElevatorState::IDLE) {
+            std::cout << "Elevator " << elevatorId << " is busy. Cannot process request." << std::endl;
+            continue;
+        }
 
+        std::cout << "Elevator " << elevatorId << " moving from " << pickupFloor << " to " << destinationFloor << std::endl;
         state = ElevatorState::MOVING;
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
-        // After moving, it will stop and open doors
         state = ElevatorState::STOPPING;
         std::cout << "Elevator " << elevatorId << " stopping at floor " << destinationFloor << std::endl;
 
         state = ElevatorState::DOOR_OPEN;
         std::cout << "Elevator " << elevatorId << " opening doors..." << std::endl;
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000)); // Doors open for 1 second
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000)); // 门打开 1 秒
 
         state = ElevatorState::DOOR_CLOSED;
         std::cout << "Elevator " << elevatorId << " closing doors..." << std::endl;
