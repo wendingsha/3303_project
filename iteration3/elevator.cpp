@@ -35,7 +35,6 @@ void elevatorFunction(int elevatorId) {
 
         if (receivedElevatorId != elevatorId) continue;
 
-        // 如果电梯不处于空闲状态，则拒绝新请求
         if (state != ElevatorState::IDLE) {
             std::cout << "Elevator " << elevatorId << " is busy. Cannot process request." << std::endl;
             continue;
