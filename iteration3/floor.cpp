@@ -17,7 +17,7 @@ void floorFunction() {
 
     int floor, destination;
     while (inputFile >> floor >> destination) {
-        if (floor == destination) continue;  // 忽略无效请求
+        if (floor == destination) continue; 
 
         std::string request = std::to_string(floor) + " " + std::to_string(destination);
         std::vector<uint8_t> out(request.begin(), request.end());
