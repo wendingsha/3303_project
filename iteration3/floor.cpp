@@ -31,3 +31,9 @@ void floorFunction() {
         }
     }
 }
+
+int main() {
+    floorFunction();
+    return 0;
+}
+
