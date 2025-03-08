@@ -40,10 +40,16 @@ void elevatorFunction(int elevatorId) {
         state = ElevatorState::MOVING;
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
+        // After moving, it will stop and open doors
         state = ElevatorState::STOPPING;
+        std::cout << "Elevator " << elevatorId << " stopping at floor " << destinationFloor << std::endl;
+
         state = ElevatorState::DOOR_OPEN;
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        std::cout << "Elevator " << elevatorId << " opening doors..." << std::endl;
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000)); // Doors open for 1 second
+
         state = ElevatorState::DOOR_CLOSED;
+        std::cout << "Elevator " << elevatorId << " closing doors..." << std::endl;
 
         std::string updateMsg = std::to_string(elevatorId) + " " + std::to_string(destinationFloor) + " IDLE";
         std::vector<uint8_t> out(updateMsg.begin(), updateMsg.end());
@@ -54,6 +60,7 @@ void elevatorFunction(int elevatorId) {
         state = ElevatorState::IDLE;
     }
 }
+
 
 int main(int argc, char* argv[]) {
     if (argc != 2) {
