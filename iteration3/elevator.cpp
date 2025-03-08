@@ -1,89 +1,76 @@
-#include "message.hpp"
-#include "elevator.hpp"
+#include "Datagram.h"
 #include <iostream>
+#include <vector>
+#include <sstream>
 #include <thread>
+#include <chrono>
 #include <mutex>
 #include <condition_variable>
-#include <queue>
-#include <vector>
-#include <chrono>
 
-extern std::mutex mtx;
-extern std::condition_variable cv;
-extern std::queue<ElevatorMessage> elevatorQueue;
-extern std::vector<int> elevatorPositions;
-extern bool systemActive;
-extern std::vector<bool> elevatorBusy;
+#define ELEVATOR_PORT 9002
+#define SCHEDULER_IP "127.0.0.1"
+#define SCHEDULER_PORT 9001
+
+enum class ElevatorState { IDLE, MOVING, STOPPING, DOOR_OPEN, DOOR_CLOSED };
+
+std::mutex mtx;
+std::condition_variable cv;
+bool systemActive = true;
 
 void elevatorFunction(int elevatorId) {
+    DatagramSocket receiveSocket(ELEVATOR_PORT);
+    DatagramSocket sendSocket;
     ElevatorState state = ElevatorState::IDLE;
 
+    std::cout << "Elevator: Listening on port " << ELEVATOR_PORT << "..." << std::endl;
+
     while (systemActive) {
-        std::unique_lock<std::mutex> lk(mtx);
-        cv.wait(lk, [] { return !elevatorQueue.empty(); });
+        std::vector<uint8_t> data(100);
+        DatagramPacket receivePacket(data, data.size());
 
-        ElevatorMessage request = elevatorQueue.front();
-        elevatorQueue.pop();
-        elevatorBusy[elevatorId] = true; // Mark elevator as busy
-        lk.unlock();
-
-        // Move to the pickup floor
-        int currentFloor = elevatorPositions[elevatorId];
-        int pickupFloor = request.floorNumber;
-        int destinationFloor = request.destination;
-
-        if (currentFloor < pickupFloor) {
-            state = ElevatorState::MOVING;
-            std::cout << "Elevator " << elevatorId << " moving up to pickup Floor " << pickupFloor << std::endl;
-        } else if (currentFloor > pickupFloor) {
-            state = ElevatorState::MOVING;
-            std::cout << "Elevator " << elevatorId << " moving down to pickup Floor " << pickupFloor << std::endl;
+        try {
+            receiveSocket.receive(receivePacket);
+        } catch (const std::runtime_error& e) {
+            std::cerr << "Error receiving: " << e.what() << std::endl;
+            continue;
         }
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000)); // Simulate travel time
+        std::string receivedMsg(reinterpret_cast<const char*>(receivePacket.getData()), receivePacket.getLength());
+        std::istringstream iss(receivedMsg);
+        int receivedElevatorId, pickupFloor, destinationFloor;
+        iss >> receivedElevatorId >> pickupFloor >> destinationFloor;
+
+        if (receivedElevatorId != elevatorId) continue; 
+
+        std::cout << "Elevator " << elevatorId << " moving from " << pickupFloor << " to " << destinationFloor << std::endl;
+
+        state = ElevatorState::MOVING;
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
         state = ElevatorState::STOPPING;
-        std::cout << "Elevator " << elevatorId << " stopping at pickup Floor " << pickupFloor << std::endl;
-
+        std::cout << "Elevator " << elevatorId << " stopping at Floor " << pickupFloor << std::endl;
+        
         state = ElevatorState::DOOR_OPEN;
-        std::cout << "Elevator " << elevatorId << " doors opening at pickup Floor " << pickupFloor << std::endl;
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000)); // Simulate door open time
+        std::cout << "Elevator " << elevatorId << " doors opening at Floor " << pickupFloor << std::endl;
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
         state = ElevatorState::DOOR_CLOSED;
-        std::cout << "Elevator " << elevatorId << " doors closing at pickup Floor " << pickupFloor << std::endl;
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000)); // Simulate door close time
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
-        // Move to the destination floor
-        currentFloor = pickupFloor;
-        if (currentFloor < destinationFloor) {
-            state = ElevatorState::MOVING;
-            std::cout << "Elevator " << elevatorId << " moving up to destination Floor " << destinationFloor << std::endl;
-        } else if (currentFloor > destinationFloor) {
-            state = ElevatorState::MOVING;
-            std::cout << "Elevator " << elevatorId << " moving down to destination Floor " << destinationFloor << std::endl;
-        }
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000)); // Simulate travel time
+        state = ElevatorState::MOVING;
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
         state = ElevatorState::STOPPING;
-        std::cout << "Elevator " << elevatorId << " stopping at destination Floor " << destinationFloor << std::endl;
+        std::cout << "Elevator " << elevatorId << " stopping at Floor " << destinationFloor << std::endl;
 
         state = ElevatorState::DOOR_OPEN;
-        std::cout << "Elevator " << elevatorId << " doors opening at destination Floor " << destinationFloor << std::endl;
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000)); // Simulate door open time
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
-        state = ElevatorState::DOOR_CLOSED;
-        std::cout << "Elevator " << elevatorId << " doors closing at destination Floor " << destinationFloor << std::endl;
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000)); // Simulate door close time
+        std::string updateMsg = std::to_string(elevatorId) + " IDLE";
+        std::vector<uint8_t> out(updateMsg.begin(), updateMsg.end());
+        DatagramPacket sendPacket(out, out.size(), InetAddress::getLocalHost(), SCHEDULER_PORT);
+        sendSocket.send(sendPacket);
 
-        {
-            std::lock_guard<std::mutex> lock(mtx);
-            elevatorPositions[elevatorId] = destinationFloor;
-            elevatorBusy[elevatorId] = false; // Mark elevator as free
-            std::cout << "Elevator " << elevatorId << " is now idle." << std::endl;
-        }
-
-        // Notify scheduler about the elevator's current position and state
-        cv.notify_all(); // Notify scheduler and floor to send the next request
+        std::cout << "Elevator " << elevatorId << " is now idle." << std::endl;
     }
 }
