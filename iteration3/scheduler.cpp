@@ -1,69 +1,51 @@
-#include "message.hpp"
-#include "scheduler.hpp"
+#include "Datagram.h"
 #include <iostream>
-#include <thread>
-#include <mutex>
-#include <condition_variable>
-#include <queue>
 #include <vector>
-#include <algorithm>
+#include <sstream>
+#include <unordered_map>
+#include <cstdlib>
 
-extern std::mutex mtx;
-extern std::condition_variable cv;
-extern std::queue<ElevatorMessage> schedulerQueue;
-extern std::queue<ElevatorMessage> elevatorQueue;
-extern std::vector<int> elevatorPositions;
-extern bool systemActive;
-std::vector<bool> elevatorBusy(1, false); // Single elevator
+#define SCHEDULER_PORT 9001
+#define ELEVATOR_IP "127.0.0.1"
+#define ELEVATOR_PORT 9002
 
-enum class SchedulerState {
-    IDLE,
-    WAITING_FOR_REQUEST,
-    WAITING_FOR_ELEVATOR,
-    ASSIGNING_REQUEST
-};
+std::unordered_map<int, bool> elevatorBusy; 
 
 void schedulerFunction() {
-    SchedulerState state = SchedulerState::IDLE;
+    DatagramSocket receiveSocket(SCHEDULER_PORT);
+    DatagramSocket sendSocket;
+    std::cout << "Scheduler: Listening on port " << SCHEDULER_PORT << "..." << std::endl;
 
-    while (systemActive) {
-        std::unique_lock<std::mutex> lk(mtx);
+    while (true) {
+        std::vector<uint8_t> data(100);
+        DatagramPacket receivePacket(data, data.size());
 
-        switch (state) {
-            case SchedulerState::IDLE:
-                state = SchedulerState::WAITING_FOR_REQUEST;
-                break;
+        try {
+            receiveSocket.receive(receivePacket);
+        } catch (const std::runtime_error& e) {
+            std::cerr << "Error receiving: " << e.what() << std::endl;
+            continue;
+        }
 
-            case SchedulerState::WAITING_FOR_REQUEST:
-                cv.wait(lk, [] { return !schedulerQueue.empty(); });
-                state = SchedulerState::WAITING_FOR_ELEVATOR;
-                break;
+        std::string receivedMsg(reinterpret_cast<const char*>(receivePacket.getData()), receivePacket.getLength());
+        std::istringstream iss(receivedMsg);
+        int floor, destination;
+        iss >> floor >> destination;
 
-            case SchedulerState::WAITING_FOR_ELEVATOR:
-                cv.wait(lk, [] { return !elevatorBusy[0]; });
-                state = SchedulerState::ASSIGNING_REQUEST;
-                break;
+        std::cout << "Scheduler: Received request from Floor " << floor << " to Floor " << destination << std::endl;
 
-            case SchedulerState::ASSIGNING_REQUEST: {
-                ElevatorMessage request = schedulerQueue.front();
-                schedulerQueue.pop();
-                lk.unlock();
+        int assignedElevator = 1;
+        elevatorBusy[assignedElevator] = true;
 
-                int bestElevator = 0; // Only one elevator
-                request.assignedElevator = bestElevator;
-                elevatorBusy[bestElevator] = true;
+        std::string elevatorRequest = std::to_string(assignedElevator) + " " + std::to_string(floor) + " " + std::to_string(destination);
+        std::vector<uint8_t> out(elevatorRequest.begin(), elevatorRequest.end());
 
-                {
-                    std::lock_guard<std::mutex> lock(mtx);
-                    elevatorQueue.push(request);
-                    std::cout << "Scheduler assigned Floor " << request.floorNumber
-                              << " to Elevator " << bestElevator << std::endl;
-                }
-
-                cv.notify_all();
-                state = SchedulerState::IDLE;
-                break;
-            }
+        DatagramPacket sendPacket(out, out.size(), InetAddress::getLocalHost(), ELEVATOR_PORT);
+        try {
+            sendSocket.send(sendPacket);
+            std::cout << "Scheduler: Assigned request to Elevator " << assignedElevator << std::endl;
+        } catch (const std::runtime_error& e) {
+            std::cerr << "Error sending to Elevator: " << e.what() << std::endl;
         }
     }
 }
