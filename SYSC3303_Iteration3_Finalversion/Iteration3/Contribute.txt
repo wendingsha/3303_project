@@ -1,0 +1,23 @@
+SYSC 3303 Group 5 Project Iteration#3
+
+Group member: 
+Annan Jiang - 101265388
+Wending Sha - 101139708
+Gabriel Song - 101243392
+Jason Shi - 101233649
+
+Annan Jiang
+-In iteration2, the state machine diagram and associated annotations were completed. 
+-In iteration3, the unit test (final version) for all subsystems was improved. Detailed UML design to simplify what the UML says.
+
+Wending Sha:
+-In iteration2, write the unit test of the main document is written and provided for testing. 
+-In iteration3, the first version of the main file is provided and the results are presented along with the tests for the different versions of the unit test.
+
+Gabriel Song: 
+-In iteration2, UML class and sequence diagrams are produced with associated comments and explanations. 
+-In iteration3, provide the first version of the master file, and provide a test environment for the overall code, and check if the subsystem can complete the unit test.
+
+Jason Shi:
+-In iteration2, the code submitted in the previous iteration was refined to have the requirements needed in this iteration. Paving the way for a multi-threaded elevator. 
+-In iteration3, the code continues to be updated so that it can make complete use of multiple elevators and meet the requirements mentioned in this iteration. All the code can be tested with the final version of the unit test.
