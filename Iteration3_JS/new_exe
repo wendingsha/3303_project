@@ -1,1 +1,12 @@
 g++ main.cpp scheduler.cpp floor.cpp elevator.cpp time_manager.cpp -o elevator_system -pthread
+
+
+
+Iteration3_JS % g++ -std=c++17 elevator_simple_test.cpp -o elevator_test
+./elevator_test
+
+g++ -std=c++17 scheduler_simple_test.cpp -o scheduler_test
+./scheduler_test
+
+g++ -std=c++17 floor_simple_test.cpp -o floor_test
+./floor_test
