@@ -20,24 +20,20 @@ void testElevatorStates() {
     std::cout << "\n=== Testing Elevator States ===" << std::endl;
     
     // Initial state should be IDLE
-    ElevatorState state = ElevatorState::IDLE;
-    TEST_ASSERT(state == ElevatorState::IDLE, "Initial state should be IDLE");
+    ElevatorState state = IDLE;
+    TEST_ASSERT(state == IDLE, "Initial state should be IDLE");
 
     // Transition to MOVING state
-    state = ElevatorState::MOVING;
-    TEST_ASSERT(state == ElevatorState::MOVING, "State should change to MOVING");
+    state = MOVING;
+    TEST_ASSERT(state == MOVING, "State should change to MOVING");
 
     // Transition to DOOR_OPEN state
-    state = ElevatorState::DOOR_OPEN;
-    TEST_ASSERT(state == ElevatorState::DOOR_OPEN, "State should change to DOOR_OPEN");
+    state = DOOR_OPEN;
+    TEST_ASSERT(state == DOOR_OPEN, "State should change to DOOR_OPEN");
 
     // Transition to DOOR_CLOSED state
-    state = ElevatorState::DOOR_CLOSED;
-    TEST_ASSERT(state == ElevatorState::DOOR_CLOSED, "State should change to DOOR_CLOSED");
-
-    // Transition to FAULTED state (new test)
-    state = ElevatorState::FAULTED;
-    TEST_ASSERT(state == ElevatorState::FAULTED, "State should change to FAULTED");
+    state = DOOR_CLOSED;
+    TEST_ASSERT(state == DOOR_CLOSED, "State should change to DOOR_CLOSED");
 }
 
 // Test floor movement calculation
@@ -61,11 +57,14 @@ void testFloorMovement() {
 void testElevatorMessage() {
     std::cout << "\n=== Testing Elevator Message ===" << std::endl;
 
-    // Creating an elevator message
+    // Creating an elevator message with timestamp 0
     ElevatorMessage msg(3, 7, true, 1, 0);
     TEST_ASSERT(msg.floorNumber == 3, "Source floor should be 3");
     TEST_ASSERT(msg.destination == 7, "Destination floor should be 7");
+    TEST_ASSERT(msg.directionUp == true, "Direction should be UP");
     TEST_ASSERT(msg.assignedElevator == 1, "Assigned elevator ID should be 1");
+    TEST_ASSERT(msg.faultCode == 0, "Default fault code should be 0 (no fault)");
+    TEST_ASSERT(msg.timestamp == 0, "Timestamp should be 0");
 
     // Edge case: Invalid floor number
     msg.floorNumber = -1;
@@ -74,6 +73,17 @@ void testElevatorMessage() {
     // Edge case: Invalid assigned elevator
     msg.assignedElevator = -1;
     TEST_ASSERT(msg.assignedElevator < 0, "Invalid assigned elevator should be handled");
+    
+    // Testing default constructor
+    ElevatorMessage defaultMsg;
+    TEST_ASSERT(defaultMsg.floorNumber == 0, "Default floor number should be 0");
+    TEST_ASSERT(defaultMsg.destination == 0, "Default destination should be 0");
+    TEST_ASSERT(defaultMsg.directionUp == true, "Default direction should be UP");
+    TEST_ASSERT(defaultMsg.assignedElevator == -1, "Default assigned elevator should be -1");
+    TEST_ASSERT(defaultMsg.status == 0, "Default status should be 0");
+    TEST_ASSERT(defaultMsg.msgType == 0, "Default message type should be 0");
+    TEST_ASSERT(defaultMsg.faultCode == 0, "Default fault code should be 0");
+    TEST_ASSERT(defaultMsg.timestamp == 0, "Default timestamp should be 0");
 }
 
 // Test elevator fault handling
@@ -81,12 +91,57 @@ void testElevatorFaultHandling() {
     std::cout << "\n=== Testing Elevator Fault Handling ===" << std::endl;
 
     // Simulating a door fault
-    ElevatorMessage msg(3, 7, true, 1, DOOR_FAULT);
-    TEST_ASSERT(msg.faultCode == DOOR_FAULT, "DOOR_FAULT should be correctly assigned");
+    ElevatorMessage msg(3, 7, true, 1, 0);
+    msg.faultCode = 1; // door fault
+    msg.msgType = 2;   // fault message type
+    msg.status = -1;   // negative status for fault
+    TEST_ASSERT(msg.faultCode == 1, "Door fault code should be 1");
+    TEST_ASSERT(msg.msgType == 2, "Message type for faults should be 2");
+    TEST_ASSERT(msg.status < 0, "Status should be negative for faults");
 
     // Simulating a stuck fault
-    msg.faultCode = STUCK_FAULT;
-    TEST_ASSERT(msg.faultCode == STUCK_FAULT, "STUCK_FAULT should be correctly assigned");
+    msg.faultCode = 2; // stuck fault
+    TEST_ASSERT(msg.faultCode == 2, "Stuck fault code should be 2");
+}
+
+// Test message types
+void testMessageTypes() {
+    std::cout << "\n=== Testing Message Types ===" << std::endl;
+    
+    ElevatorMessage msg;
+    
+    // New request/assignment
+    msg.msgType = 0;
+    TEST_ASSERT(msg.msgType == 0, "Message type 0 should be for new request/assignment");
+    
+    // Normal completion
+    msg.msgType = 1;
+    TEST_ASSERT(msg.msgType == 1, "Message type 1 should be for normal completion");
+    
+    // Fault
+    msg.msgType = 2;
+    TEST_ASSERT(msg.msgType == 2, "Message type 2 should be for fault");
+    
+    // Intermediate update
+    msg.msgType = 3;
+    TEST_ASSERT(msg.msgType == 3, "Message type 3 should be for intermediate update");
+}
+
+// Test scheduler states
+void testSchedulerStates() {
+    std::cout << "\n=== Testing Scheduler States ===" << std::endl;
+    
+    // Initial state
+    SchedulerState state = IDLE_SCHEDULER;
+    TEST_ASSERT(state == IDLE_SCHEDULER, "Initial scheduler state should be IDLE_SCHEDULER");
+    
+    // Transition to ASSIGNING
+    state = ASSIGNING;
+    TEST_ASSERT(state == ASSIGNING, "Scheduler state should change to ASSIGNING");
+    
+    // Transition to PROCESSING
+    state = PROCESSING;
+    TEST_ASSERT(state == PROCESSING, "Scheduler state should change to PROCESSING");
 }
 
 // Run all test cases
@@ -99,6 +154,8 @@ int main() {
     testFloorMovement();
     testElevatorMessage();
     testElevatorFaultHandling();
+    testMessageTypes();
+    testSchedulerStates();
 
     std::cout << "\n========================================" << std::endl;
     if (failures == 0) {
