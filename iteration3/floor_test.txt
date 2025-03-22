@@ -26,7 +26,7 @@ void testRequestGeneration() {
         std::cout << "  Test Case " << testCase++ << ": Request from floor " << request.first 
                   << " to floor " << request.second << std::endl;
         
-        // Create elevator message
+        // Create elevator message with timestamp 0
         bool directionUp = request.second > request.first;
         ElevatorMessage msg(request.first, request.second, directionUp, -1, 0);
         
@@ -42,6 +42,13 @@ void testRequestGeneration() {
         
         TEST_ASSERT(calculatedDirection == directionUp, 
                    "Direction should be " + expectedDirection);
+        
+        // Verify default values according to message.hpp
+        TEST_ASSERT(msg.assignedElevator == -1, "Assigned elevator should be -1 (unassigned)");
+        TEST_ASSERT(msg.status == 0, "Status should be 0 (default)");
+        TEST_ASSERT(msg.msgType == 0, "Message type should be 0 (new request)");
+        TEST_ASSERT(msg.faultCode == 0, "Fault code should be 0 (no fault)");
+        TEST_ASSERT(msg.timestamp == 0, "Timestamp should be 0");
         
         std::cout << "  ✓ Request Case " << (testCase-1) << " passed\n" << std::endl;
     }
@@ -83,25 +90,74 @@ void testDirectionCalculation() {
     
     std::cout << "  Test Case 1: Upward request {3,8}" << std::endl;
     std::pair<int, int> upRequest = {3, 8};
-    TEST_ASSERT(upRequest.second > upRequest.first, "Request from floor 3 to 8 should be UP");
+    bool directionUp = upRequest.second > upRequest.first;
+    TEST_ASSERT(directionUp, "Request from floor 3 to 8 should be UP");
     
     std::cout << "  Test Case 2: Downward request {9,4}" << std::endl;
     std::pair<int, int> downRequest = {9, 4};
-    TEST_ASSERT(downRequest.second < downRequest.first, "Request from floor 9 to 4 should be DOWN");
+    directionUp = downRequest.second > downRequest.first;
+    TEST_ASSERT(!directionUp, "Request from floor 9 to 4 should be DOWN");
 
     std::cout << "  Test Case 3: Same floor request {5,5}" << std::endl;
     std::pair<int, int> sameFloorRequest = {5, 5};
-    TEST_ASSERT(sameFloorRequest.second == sameFloorRequest.first, "Request from floor 5 to 5 should be SAME FLOOR");
+    directionUp = sameFloorRequest.second > sameFloorRequest.first;
+    TEST_ASSERT(!directionUp, "Request from floor 5 to 5 should not be UP");
+    
+    // Create message and test directionUp
+    ElevatorMessage msg(5, 5, false, -1, 0);
+    TEST_ASSERT(!msg.directionUp, "Message for same floor should have directionUp=false");
 
     std::cout << "  Test Case 4: Negative floor request {-1, 4}" << std::endl;
     std::pair<int, int> negativeFloorRequest = {-1, 4};
     TEST_ASSERT(negativeFloorRequest.first < 0, "Negative floor request should be detected");
+    
+    // Create message with negative floor
+    ElevatorMessage negMsg(negativeFloorRequest.first, negativeFloorRequest.second, true, -1, 0);
+    TEST_ASSERT(negMsg.floorNumber < 0, "Message should accept negative floor number");
 
     std::cout << "  Test Case 5: Large floor request {INT_MAX, INT_MIN}" << std::endl;
     std::pair<int, int> extremeFloorRequest = {INT_MAX, INT_MIN};
-    TEST_ASSERT(extremeFloorRequest.second < extremeFloorRequest.first, "INT_MAX to INT_MIN should be DOWN");
+    directionUp = extremeFloorRequest.second > extremeFloorRequest.first;
+    TEST_ASSERT(!directionUp, "INT_MAX to INT_MIN should be DOWN");
 
     std::cout << "Direction Calculation: All tests passed" << std::endl;
+}
+
+// Test message types
+void testMessageTypes() {
+    std::cout << "\n=== Testing Message Types ===" << std::endl;
+    
+    // Test new request (msgType = 0)
+    std::cout << "  Test Case 1: New request message" << std::endl;
+    ElevatorMessage newReqMsg(3, 7, true, -1, 0);
+    newReqMsg.msgType = 0;
+    TEST_ASSERT(newReqMsg.msgType == 0, "Message type should be 0 for new request");
+    
+    // Test normal completion (msgType = 1)
+    std::cout << "  Test Case 2: Normal completion message" << std::endl;
+    ElevatorMessage completeMsg(3, 7, true, 1, 10);
+    completeMsg.msgType = 1;
+    completeMsg.status = 1;
+    TEST_ASSERT(completeMsg.msgType == 1, "Message type should be 1 for normal completion");
+    TEST_ASSERT(completeMsg.status == 1, "Status should be 1 for success");
+    
+    // Test fault message (msgType = 2)
+    std::cout << "  Test Case 3: Fault message" << std::endl;
+    ElevatorMessage faultMsg(3, 7, true, 1, 20);
+    faultMsg.msgType = 2;
+    faultMsg.status = -1;
+    faultMsg.faultCode = 1; // door fault
+    TEST_ASSERT(faultMsg.msgType == 2, "Message type should be 2 for fault");
+    TEST_ASSERT(faultMsg.status < 0, "Status should be negative for fault");
+    TEST_ASSERT(faultMsg.faultCode == 1, "Fault code should be 1 for door fault");
+    
+    // Test update message (msgType = 3)
+    std::cout << "  Test Case 4: Intermediate update message" << std::endl;
+    ElevatorMessage updateMsg(3, 7, true, 1, 30);
+    updateMsg.msgType = 3;
+    TEST_ASSERT(updateMsg.msgType == 3, "Message type should be 3 for intermediate update");
+    
+    std::cout << "Message Types: All tests passed" << std::endl;
 }
 
 // Main function
@@ -113,6 +169,7 @@ int main() {
     testRequestGeneration();
     testSentRequestTracking();
     testDirectionCalculation();
+    testMessageTypes(); // Added new test function
     
     std::cout << "\n========================================" << std::endl;
     if (failures == 0) {
