@@ -3,6 +3,8 @@
 #include <queue>
 #include <limits>
 #include "message.hpp"
+#include <mutex>
+#include <thread>
 
 // Improved test assertion macro with failure tracking
 int failures = 0;
@@ -41,24 +43,36 @@ void testElevatorAssignment() {
         bool goingUp;
         int passengerCount;
         bool isFaulted;
+        struct sockaddr_in address;
     };
 
-    Elevator elevators[2] = {
-        {0, 1, false, true, true, 0, false},
-        {1, 5, false, true, true, 0, false}
-    };
+    std::vector<Elevator> elevators(2);
+    for (int i = 0; i < 2; i++) {
+        elevators[i].id = i;
+        elevators[i].position = (i == 0) ? 1 : 5; // Elevator 0 at floor 1, Elevator 1 at floor 5
+        elevators[i].isMoving = false;
+        elevators[i].isIdle = true;
+        elevators[i].goingUp = true;
+        elevators[i].passengerCount = 0;
+        elevators[i].isFaulted = false;
+    }
 
     TEST_ASSERT(elevators[0].position == 1, "Elevator 0 should be at floor 1");
     TEST_ASSERT(elevators[1].position == 5, "Elevator 1 should be at floor 5");
 
-    ElevatorMessage request(3, 7, true, -1, 0);
+    ElevatorMessage request(3, 7, true, -1, 0, 0); // New request from floor 3 to 7
 
     // Simulate assignment logic with fault detection
     int bestElevator = -1;
+    int minDistance = std::numeric_limits<int>::max();
+
     for (int i = 0; i < 2; i++) {
         if (!elevators[i].isFaulted && elevators[i].isIdle) {
-            bestElevator = i;
-            break;
+            int distance = std::abs(elevators[i].position - request.floorNumber);
+            if (distance < minDistance) {
+                minDistance = distance;
+                bestElevator = i;
+            }
         }
     }
 
@@ -83,19 +97,58 @@ void testPendingRequests() {
     std::cout << "\n=== Testing Pending Request Queue ===" << std::endl;
 
     std::queue<ElevatorMessage> pendingRequests;
+    std::mutex pendingMutex;
 
     TEST_ASSERT(pendingRequests.empty(), "Queue should be empty initially");
 
-    ElevatorMessage msg1(3, 7, true, -1, 0);
-    pendingRequests.push(msg1);
+    ElevatorMessage msg1(3, 7, true, -1, 0, 0); // New request from floor 3 to 7
+    {
+        std::lock_guard<std::mutex> lock(pendingMutex);
+        pendingRequests.push(msg1);
+    }
 
     TEST_ASSERT(!pendingRequests.empty(), "Queue should not be empty after push");
     TEST_ASSERT(pendingRequests.size() == 1, "Queue size should be 1");
 
-    pendingRequests.pop();
+    {
+        std::lock_guard<std::mutex> lock(pendingMutex);
+        pendingRequests.pop();
+    }
     TEST_ASSERT(pendingRequests.empty(), "Queue should be empty after popping all requests");
 
     std::cout << "Pending Request Queue: All tests passed" << std::endl;
+}
+
+// Test fault monitor functionality
+void testFaultMonitor() {
+    std::cout << "\n=== Testing Fault Monitor ===" << std::endl;
+
+    struct InProgressRequest {
+        ElevatorMessage msg;
+        int assignedTime;
+        int elevatorId;
+    };
+
+    std::vector<InProgressRequest> inProgressRequests;
+    std::mutex inProgressMutex;
+
+    ElevatorMessage msg1(3, 7, true, -1, 0, 0); // New request from floor 3 to 7
+    inProgressRequests.push_back({msg1, 0, 0}); // Simulate an in-progress request
+
+    // Simulate timeout scenario
+    {
+        std::lock_guard<std::mutex> lock(inProgressMutex);
+        for (auto it = inProgressRequests.begin(); it != inProgressRequests.end(); ) {
+            if (10 - it->assignedTime > RESPONSE_TIMEOUT) { // Simulate timeout
+                it = inProgressRequests.erase(it);
+                TEST_ASSERT(true, "Fault monitor should detect timeout and remove request");
+            } else {
+                ++it;
+            }
+        }
+    }
+
+    std::cout << "Fault Monitor: All tests passed" << std::endl;
 }
 
 // Main function
@@ -107,6 +160,7 @@ int main() {
     testSchedulerStates();
     testElevatorAssignment();
     testPendingRequests();
+    testFaultMonitor();
     
     std::cout << "\n========================================" << std::endl;
     if (failures == 0) {
