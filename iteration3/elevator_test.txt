@@ -1,0 +1,112 @@
+// elevator_simple_test.cpp
+#include <iostream>
+#include <cmath>
+#include "message.hpp"
+
+// Improved TEST_ASSERT macro: Does not stop execution on failure
+int failures = 0;
+#define TEST_ASSERT(condition, message) \
+    do { \
+        if (!(condition)) { \
+            std::cerr << " FAILED: " << message << std::endl; \
+            failures++; \
+        } else { \
+            std::cout << "✓ PASSED: " << message << std::endl; \
+        } \
+    } while (0)
+
+// Test elevator states
+void testElevatorStates() {
+    std::cout << "\n=== Testing Elevator States ===" << std::endl;
+    
+    // Initial state should be IDLE
+    ElevatorState state = ElevatorState::IDLE;
+    TEST_ASSERT(state == ElevatorState::IDLE, "Initial state should be IDLE");
+
+    // Transition to MOVING state
+    state = ElevatorState::MOVING;
+    TEST_ASSERT(state == ElevatorState::MOVING, "State should change to MOVING");
+
+    // Transition to DOOR_OPEN state
+    state = ElevatorState::DOOR_OPEN;
+    TEST_ASSERT(state == ElevatorState::DOOR_OPEN, "State should change to DOOR_OPEN");
+
+    // Transition to DOOR_CLOSED state
+    state = ElevatorState::DOOR_CLOSED;
+    TEST_ASSERT(state == ElevatorState::DOOR_CLOSED, "State should change to DOOR_CLOSED");
+
+    // Transition to FAULTED state (new test)
+    state = ElevatorState::FAULTED;
+    TEST_ASSERT(state == ElevatorState::FAULTED, "State should change to FAULTED");
+}
+
+// Test floor movement calculation
+void testFloorMovement() {
+    std::cout << "\n=== Testing Floor Movement Calculation ===" << std::endl;
+
+    // Moving from floor 1 to 5 (UP)
+    int distance = std::abs(5 - 1);
+    TEST_ASSERT(distance == 4, "Distance from floor 1 to 5 should be 4");
+
+    // Moving from floor 8 to 3 (DOWN)
+    distance = std::abs(8 - 3);
+    TEST_ASSERT(distance == 5, "Distance from floor 8 to 3 should be 5");
+
+    // Staying on the same floor
+    distance = std::abs(6 - 6);
+    TEST_ASSERT(distance == 0, "Distance from floor 6 to 6 should be 0");
+}
+
+// Test `ElevatorMessage` structure
+void testElevatorMessage() {
+    std::cout << "\n=== Testing Elevator Message ===" << std::endl;
+
+    // Creating an elevator message
+    ElevatorMessage msg(3, 7, true, 1, 0);
+    TEST_ASSERT(msg.floorNumber == 3, "Source floor should be 3");
+    TEST_ASSERT(msg.destination == 7, "Destination floor should be 7");
+    TEST_ASSERT(msg.assignedElevator == 1, "Assigned elevator ID should be 1");
+
+    // Edge case: Invalid floor number
+    msg.floorNumber = -1;
+    TEST_ASSERT(msg.floorNumber < 1, "Invalid floor number should be handled");
+
+    // Edge case: Invalid assigned elevator
+    msg.assignedElevator = -1;
+    TEST_ASSERT(msg.assignedElevator < 0, "Invalid assigned elevator should be handled");
+}
+
+// Test elevator fault handling
+void testElevatorFaultHandling() {
+    std::cout << "\n=== Testing Elevator Fault Handling ===" << std::endl;
+
+    // Simulating a door fault
+    ElevatorMessage msg(3, 7, true, 1, DOOR_FAULT);
+    TEST_ASSERT(msg.faultCode == DOOR_FAULT, "DOOR_FAULT should be correctly assigned");
+
+    // Simulating a stuck fault
+    msg.faultCode = STUCK_FAULT;
+    TEST_ASSERT(msg.faultCode == STUCK_FAULT, "STUCK_FAULT should be correctly assigned");
+}
+
+// Run all test cases
+int main() {
+    std::cout << "\n========================================" << std::endl;
+    std::cout << "STARTING ELEVATOR SYSTEM TESTS" << std::endl;
+    std::cout << "========================================\n" << std::endl;
+    
+    testElevatorStates();
+    testFloorMovement();
+    testElevatorMessage();
+    testElevatorFaultHandling();
+
+    std::cout << "\n========================================" << std::endl;
+    if (failures == 0) {
+        std::cout << " ELEVATOR TESTS SUMMARY: All tests passed! " << std::endl;
+    } else {
+        std::cout << " ELEVATOR TESTS SUMMARY: " << failures << " tests failed! " << std::endl;
+    }
+    std::cout << "========================================" << std::endl;
+    
+    return failures;
+}

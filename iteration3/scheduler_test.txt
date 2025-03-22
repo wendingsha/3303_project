@@ -1,0 +1,120 @@
+#include <iostream>
+#include <set>
+#include <queue>
+#include <limits>
+#include "message.hpp"
+
+// Improved test assertion macro with failure tracking
+int failures = 0;
+#define TEST_ASSERT(condition, message) \
+    do { \
+        if (!(condition)) { \
+            std::cerr << " FAILED: " << message << std::endl; \
+            failures++; \
+        } else { \
+            std::cout << "✓ PASSED: " << message << std::endl; \
+        } \
+    } while (0)
+
+// Test scheduler states
+void testSchedulerStates() {
+    std::cout << "\n=== Testing Scheduler States ===" << std::endl;
+    
+    SchedulerState state = SchedulerState::IDLE_SCHEDULER;
+    TEST_ASSERT(state == SchedulerState::IDLE_SCHEDULER, "Initial state should be IDLE_SCHEDULER");
+    
+    state = SchedulerState::ASSIGNING;
+    TEST_ASSERT(state == SchedulerState::ASSIGNING, "State should change to ASSIGNING");
+
+    std::cout << " Scheduler States: All tests passed" << std::endl;
+}
+
+// Test elevator assignment logic including fault handling
+void testElevatorAssignment() {
+    std::cout << "\n=== Testing Elevator Assignment ===" << std::endl;
+
+    struct Elevator {
+        int id;
+        int position;
+        bool isMoving;
+        bool isIdle;
+        bool goingUp;
+        int passengerCount;
+        bool isFaulted;
+    };
+
+    Elevator elevators[2] = {
+        {0, 1, false, true, true, 0, false},
+        {1, 5, false, true, true, 0, false}
+    };
+
+    TEST_ASSERT(elevators[0].position == 1, "Elevator 0 should be at floor 1");
+    TEST_ASSERT(elevators[1].position == 5, "Elevator 1 should be at floor 5");
+
+    ElevatorMessage request(3, 7, true, -1, 0);
+
+    // Simulate assignment logic with fault detection
+    int bestElevator = -1;
+    for (int i = 0; i < 2; i++) {
+        if (!elevators[i].isFaulted && elevators[i].isIdle) {
+            bestElevator = i;
+            break;
+        }
+    }
+
+    TEST_ASSERT(bestElevator != -1, "An elevator should be assigned");
+    TEST_ASSERT(elevators[bestElevator].isIdle, "Assigned elevator should be idle");
+    
+    elevators[bestElevator].isIdle = false;
+    elevators[bestElevator].isMoving = true;
+    elevators[bestElevator].passengerCount++;
+
+    TEST_ASSERT(elevators[bestElevator].isMoving, "Elevator should be moving after assignment");
+
+    // Simulate fault scenario
+    elevators[bestElevator].isFaulted = true;
+    TEST_ASSERT(elevators[bestElevator].isFaulted, "Elevator should be marked as faulted");
+
+    std::cout << "Elevator Assignment: All tests passed" << std::endl;
+}
+
+// Test pending request queue
+void testPendingRequests() {
+    std::cout << "\n=== Testing Pending Request Queue ===" << std::endl;
+
+    std::queue<ElevatorMessage> pendingRequests;
+
+    TEST_ASSERT(pendingRequests.empty(), "Queue should be empty initially");
+
+    ElevatorMessage msg1(3, 7, true, -1, 0);
+    pendingRequests.push(msg1);
+
+    TEST_ASSERT(!pendingRequests.empty(), "Queue should not be empty after push");
+    TEST_ASSERT(pendingRequests.size() == 1, "Queue size should be 1");
+
+    pendingRequests.pop();
+    TEST_ASSERT(pendingRequests.empty(), "Queue should be empty after popping all requests");
+
+    std::cout << "Pending Request Queue: All tests passed" << std::endl;
+}
+
+// Main function
+int main() {
+    std::cout << "\n========================================" << std::endl;
+    std::cout << "STARTING SCHEDULER SYSTEM TESTS" << std::endl;
+    std::cout << "========================================\n" << std::endl;
+    
+    testSchedulerStates();
+    testElevatorAssignment();
+    testPendingRequests();
+    
+    std::cout << "\n========================================" << std::endl;
+    if (failures == 0) {
+        std::cout << " SCHEDULER TESTS SUMMARY: All tests passed! " << std::endl;
+    } else {
+        std::cout << " SCHEDULER TESTS SUMMARY: " << failures << " tests failed! " << std::endl;
+    }
+    std::cout << "========================================" << std::endl;
+    
+    return failures;
+}

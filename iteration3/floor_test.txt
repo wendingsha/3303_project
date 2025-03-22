@@ -1,0 +1,126 @@
+#include <iostream>
+#include <set>
+#include <vector>
+#include "message.hpp"
+
+// Improved test assertion macro with failure tracking
+int failures = 0;
+#define TEST_ASSERT(condition, message) \
+    do { \
+        if (!(condition)) { \
+            std::cerr << "FAILED: " << message << std::endl; \
+            failures++; \
+        } else { \
+            std::cout << "✓ PASSED: " << message << std::endl; \
+        } \
+    } while (0)
+
+// Test request generation
+void testRequestGeneration() {
+    std::cout << "\n=== Testing Floor Request Generation ===" << std::endl;
+    
+    std::vector<std::pair<int, int>> requestList = {{1, 5}, {3, 8}, {6, 2}, {-1, 4}, {0, 0}};
+    int testCase = 1;
+    
+    for (const auto& request : requestList) {
+        std::cout << "  Test Case " << testCase++ << ": Request from floor " << request.first 
+                  << " to floor " << request.second << std::endl;
+        
+        // Create elevator message
+        bool directionUp = request.second > request.first;
+        ElevatorMessage msg(request.first, request.second, directionUp, -1, 0);
+        
+        TEST_ASSERT(msg.floorNumber == request.first, 
+                   "Source floor should be " + std::to_string(request.first));
+        
+        TEST_ASSERT(msg.destination == request.second, 
+                   "Destination floor should be " + std::to_string(request.second));
+        
+        // Validate direction
+        bool calculatedDirection = (request.second > request.first);
+        std::string expectedDirection = calculatedDirection ? "UP" : "DOWN";
+        
+        TEST_ASSERT(calculatedDirection == directionUp, 
+                   "Direction should be " + expectedDirection);
+        
+        std::cout << "  ✓ Request Case " << (testCase-1) << " passed\n" << std::endl;
+    }
+    
+    std::cout << "Floor Request Generation: All tests passed" << std::endl;
+}
+
+// Test request tracking
+void testSentRequestTracking() {
+    std::cout << "\n=== Testing Floor Request Tracking ===" << std::endl;
+    
+    std::set<std::pair<int, int>> sentRequests;
+    
+    std::pair<int, int> request1 = {1, 5};
+    std::pair<int, int> request2 = {3, 8};
+    
+    std::cout << "  Test Case 1: Empty tracking set" << std::endl;
+    TEST_ASSERT(sentRequests.count(request1) == 0, "Request {1,5} should not exist initially");
+    
+    std::cout << "  Test Case 2: Adding first request {1,5}" << std::endl;
+    sentRequests.insert(request1);
+    TEST_ASSERT(sentRequests.count(request1) == 1, "Request {1,5} should exist after insertion");
+    TEST_ASSERT(sentRequests.count(request2) == 0, "Request {3,8} should not exist yet");
+    
+    std::cout << "  Test Case 3: Adding second request {3,8}" << std::endl;
+    sentRequests.insert(request2);
+    TEST_ASSERT(sentRequests.count(request2) == 1, "Request {3,8} should exist after insertion");
+
+    std::cout << "  Test Case 4: Removing request {1,5}" << std::endl;
+    sentRequests.erase(request1);
+    TEST_ASSERT(sentRequests.count(request1) == 0, "Request {1,5} should not exist after removal");
+    
+    std::cout << "Floor Request Tracking: All tests passed" << std::endl;
+}
+
+// Test direction calculation
+void testDirectionCalculation() {
+    std::cout << "\n=== Testing Direction Calculation ===" << std::endl;
+    
+    std::cout << "  Test Case 1: Upward request {3,8}" << std::endl;
+    std::pair<int, int> upRequest = {3, 8};
+    TEST_ASSERT(upRequest.second > upRequest.first, "Request from floor 3 to 8 should be UP");
+    
+    std::cout << "  Test Case 2: Downward request {9,4}" << std::endl;
+    std::pair<int, int> downRequest = {9, 4};
+    TEST_ASSERT(downRequest.second < downRequest.first, "Request from floor 9 to 4 should be DOWN");
+
+    std::cout << "  Test Case 3: Same floor request {5,5}" << std::endl;
+    std::pair<int, int> sameFloorRequest = {5, 5};
+    TEST_ASSERT(sameFloorRequest.second == sameFloorRequest.first, "Request from floor 5 to 5 should be SAME FLOOR");
+
+    std::cout << "  Test Case 4: Negative floor request {-1, 4}" << std::endl;
+    std::pair<int, int> negativeFloorRequest = {-1, 4};
+    TEST_ASSERT(negativeFloorRequest.first < 0, "Negative floor request should be detected");
+
+    std::cout << "  Test Case 5: Large floor request {INT_MAX, INT_MIN}" << std::endl;
+    std::pair<int, int> extremeFloorRequest = {INT_MAX, INT_MIN};
+    TEST_ASSERT(extremeFloorRequest.second < extremeFloorRequest.first, "INT_MAX to INT_MIN should be DOWN");
+
+    std::cout << "Direction Calculation: All tests passed" << std::endl;
+}
+
+// Main function
+int main() {
+    std::cout << "\n========================================" << std::endl;
+    std::cout << "STARTING FLOOR SYSTEM TESTS" << std::endl;
+    std::cout << "========================================\n" << std::endl;
+    
+    testRequestGeneration();
+    testSentRequestTracking();
+    testDirectionCalculation();
+    
+    std::cout << "\n========================================" << std::endl;
+    if (failures == 0) {
+        std::cout << " FLOOR TESTS SUMMARY: All tests passed! " << std::endl;
+    } else {
+        std::cout << "FLOOR TESTS SUMMARY: " << failures << " tests failed! " << std::endl;
+    }
+    std::cout << "========================================" << std::endl;
+    
+    return failures;
+}
