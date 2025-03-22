@@ -1,0 +1,10 @@
+1, DOWN, 0
+3, DOWN, 1
+9, DOWN, 0
+5, DOWN, 2
+7, UP, 0
+4, DOWN, 0
+5, DOWN, 0
+6, UP, 0
+1, UP, 0
+12, DOWN, 0
