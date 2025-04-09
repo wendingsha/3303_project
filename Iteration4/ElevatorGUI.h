@@ -4,13 +4,9 @@
 #include <QMainWindow>
 #include <QPushButton>
 #include <QTextEdit>
-#include <QThread>
+#include <QTableWidget>
+#include <QTimer>
 
-/**
- * ElevatorGUI is the main window class for the elevator system GUI.
- * It provides buttons to start the elevator system and simulate requests.
- * It also includes a text area to display system logs.
- */
 class ElevatorGUI : public QMainWindow {
     Q_OBJECT
 
@@ -19,18 +15,15 @@ public:
     ~ElevatorGUI();
 
 private slots:
-    // Called when the user clicks the "Start System" button
     void handleStartSystem();
-
-    // Called when the user clicks the "Send Request" button (future extension)
-    void handleSendRequest();
+    void refreshStatusTable();
 
 private:
-    QPushButton *startButton;    // Button to start the system
-    QPushButton *requestButton;  // Button to simulate request (optional)
-    QTextEdit *logBox;           // Text area to show system logs
+    QPushButton *startButton;
+    QTableWidget *statusTable;
+    QTextEdit *logBox;
+    QTimer *updateTimer;
 
-    // Appends a message to the logBox with a timestamp
     void logMessage(const QString &msg);
 };
 
