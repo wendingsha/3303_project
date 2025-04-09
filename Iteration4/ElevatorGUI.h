@@ -1,11 +1,11 @@
 #ifndef ELEVATORGUI_H
 #define ELEVATORGUI_H
 
-#include <QMainWindow>
-#include <QPushButton>
-#include <QTextEdit>
-#include <QTableWidget>
-#include <QTimer>
+#include <QtWidgets/QMainWindow>
+#include <QtWidgets/QPushButton>
+#include <QtWidgets/QTextEdit>
+#include <QtWidgets/QTableWidget>
+#include <QtWidgets/QTimer>
 
 class ElevatorGUI : public QMainWindow {
     Q_OBJECT
