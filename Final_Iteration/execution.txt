@@ -1,0 +1,2 @@
+g++ -std=c++11 -pthread main.cpp elevator.cpp floor.cpp scheduler.cpp time_manager.cpp -o elevator_sim
+./elevator_sim
