@@ -8,7 +8,7 @@
 #include "shared.hpp"
 
 std::atomic<int> currentTime(0);
-std::mutex printMutex;
+//std::mutex printMutex;
 bool systemActive = true;
 
 ElevatorGUI::ElevatorGUI(QWidget *parent)
