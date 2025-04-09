@@ -1,6 +1,7 @@
 /* scheduler.cpp */
 #include "message.hpp"
 #include "time_manager.hpp"
+#include "shared.hpp"
 #include <iostream>
 #include <cstring>
 #include <arpa/inet.h>
