@@ -1,6 +1,6 @@
 #include "ElevatorGUI.h"
-#include <QVBoxLayout>
-#include <QDateTime>
+#include <QtWidgets/QVBoxLayout>
+#include <QtWidgets/QDateTime>
 #include <thread>
 #include "floor.cpp"
 #include "scheduler.cpp"
